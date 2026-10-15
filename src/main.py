@@ -1,12 +1,13 @@
 import os
 import shutil
+import sys
 
 from markdown_to_html_node import markdown_to_html_node
 
 
 
 def copy_static_to_public():
-    public_dir = os.path.join(os.getcwd(), "public")
+    public_dir = os.path.join(os.getcwd(), "docs")
     shutil.rmtree(public_dir, ignore_errors=True)
     os.mkdir(public_dir)
 
@@ -40,7 +41,7 @@ def extract_title(markdown):
 
     return title[2:].strip()
 
-def generate_page(from_path, template_path, dest_path):
+def generate_page(from_path, template_path, dest_path, basepath):
     from_path_full = os.path.join(os.getcwd(), from_path)
     template_path_full = os.path.join(os.getcwd(), template_path)
     dest_path_full = os.path.join(os.getcwd(), dest_path)
@@ -64,40 +65,59 @@ def generate_page(from_path, template_path, dest_path):
     template_file_content = template_file_content.replace(
         "{{ Content }}", html_content
         )
+    template_file_content = template_file_content.replace(
+        'href="/', f'href="{basepath}'
+        )
+    template_file_content = template_file_content.replace(
+        'src="/', f'src="{basepath}'
+        )
 
     os.makedirs(os.path.dirname(dest_path_full), exist_ok=True)
 
     with open(dest_path_full, 'w') as fp:
         fp.write(template_file_content)
 
-def generate_pages_recursive(dir_path_content, template_path, dest_dir_path):
+def generate_pages_recursive(dir_path_content,
+                             template_path,
+                             dest_dir_path, 
+                             basepath):
     content_dir_elements = os.listdir(dir_path_content)
     
     for el in content_dir_elements:
         el_path = os.path.join(dir_path_content, el)
+
         if os.path.isfile(el_path):
             dest_dir_path_full = os.path.join(
                 dest_dir_path,
                 el.replace(".md", ".html")
                 )
-            generate_page(el_path, template_path, dest_dir_path_full)
+            generate_page(el_path, template_path, dest_dir_path_full, basepath)
         else:
-            os.mkdir(os.path.join(dest_dir_path, el))
             content_dir_path_full = os.path.join(dir_path_content, el)
             dest_dir_path_full = os.path.join(dest_dir_path, el)
+
+            os.makedirs(dest_dir_path_full, exist_ok=True)
+            
             generate_pages_recursive(
                 content_dir_path_full,
                 template_path,
-                dest_dir_path_full
+                dest_dir_path_full,
+                basepath
             )
 
 
 def main():
+    if len(sys.argv) > 1:
+        basepath = "/"
+    else:
+        basepath = sys.argv[1]
+
     copy_static_to_public()
     generate_pages_recursive(
         "content/",
         "template.html",
-        "public/"
+        "docs/",
+        basepath
         )
     
 main()
