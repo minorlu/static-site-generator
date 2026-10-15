@@ -108,9 +108,9 @@ def generate_pages_recursive(dir_path_content,
 
 def main():
     if len(sys.argv) > 1:
-        basepath = "/"
-    else:
         basepath = sys.argv[1]
+    else:
+        basepath = "/"
 
     copy_static_to_public()
     generate_pages_recursive(
